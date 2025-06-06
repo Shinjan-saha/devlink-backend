@@ -23,6 +23,20 @@ func GetResources(c *gin.Context) {
 }
 
 
+func GetPendingResources(c *gin.Context) {
+    role := c.MustGet("role").(string)
+    if role != "admin" {
+        c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+        return
+    }
+
+    var resources []models.Resource
+    db.DB.Where("approved = ?", false).Find(&resources)
+    c.JSON(http.StatusOK, resources)
+}
+
+
+
 
 func SubmitResource(c *gin.Context) {
     var resource models.Resource

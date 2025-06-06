@@ -13,12 +13,17 @@ func RegisterRoutes(r *gin.Engine) {
         api.POST("/login", handlers.Login)
 
         resource := api.Group("/resources")
-        resource.GET("", handlers.GetResources)
-
-        resource.Use(middleware.AuthMiddleware())
         {
-            resource.POST("", handlers.SubmitResource)
-            resource.PUT("/:id/approve", handlers.ApproveResource)
+            
+            resource.GET("", handlers.GetResources)
+
+            
+            resource.Use(middleware.AuthMiddleware())
+            {
+                resource.POST("", handlers.SubmitResource)
+                resource.PUT("/:id/approve", handlers.ApproveResource)
+                resource.GET("/pending", handlers.GetPendingResources) 
+            }
         }
     }
 }

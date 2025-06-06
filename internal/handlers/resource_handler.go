@@ -9,9 +9,20 @@ import (
 
 func GetResources(c *gin.Context) {
     var resources []models.Resource
-    db.DB.Where("approved = ?", true).Find(&resources)
+
+    roleVal, exists := c.Get("role")
+    if exists && roleVal.(string) == "admin" {
+       
+        db.DB.Find(&resources)
+    } else {
+        
+        db.DB.Where("approved = ?", true).Find(&resources)
+    }
+
     c.JSON(http.StatusOK, resources)
 }
+
+
 
 func SubmitResource(c *gin.Context) {
     var resource models.Resource

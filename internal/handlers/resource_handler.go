@@ -19,12 +19,24 @@ func SubmitResource(c *gin.Context) {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
     }
+
     userID := c.MustGet("user_id").(uint)
     resource.SubmittedBy = userID
     resource.Approved = false
-    db.DB.Create(&resource)
-    c.JSON(http.StatusOK, gin.H{"message": "submitted for review"})
+
+    
+    if err := db.DB.Create(&resource).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to submit resource"})
+        return
+    }
+
+    
+    c.JSON(http.StatusOK, gin.H{
+        "message":    "submitted for review",
+        "resourceID": resource.ID, 
+    })
 }
+
 
 func ApproveResource(c *gin.Context) {
     userRole := c.MustGet("role").(string)

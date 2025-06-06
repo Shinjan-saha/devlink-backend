@@ -7,6 +7,8 @@ import (
     "devlink-backend/internal/models"
     "devlink-backend/internal/db"
     "devlink-backend/internal/auth"
+
+	"os"
 )
 
 func Register(c *gin.Context) {
@@ -16,13 +18,41 @@ func Register(c *gin.Context) {
         return
     }
 
+   
+    var existingUser models.User
+    if err := db.DB.Where("username = ? OR email = ?", user.Username, user.Email).First(&existingUser).Error; err == nil {
+        
+        c.JSON(http.StatusConflict, gin.H{"error": "username or email already taken"})
+        return
+    }
+
+    
+    role := "user"
+    if user.Role == "admin" {
+        adminSecret := c.GetHeader("X-Admin-Secret")
+        if adminSecret == "" {
+            adminSecret = c.Query("admin_secret")
+        }
+
+        if adminSecret != os.Getenv("ADMIN_SECRET") {
+            c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to register as admin"})
+            return
+        }
+        role = "admin"
+    }
+
     hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), 14)
     user.Password = string(hashedPassword)
-    user.Role = "user"
+    user.Role = role
 
-    db.DB.Create(&user)
-    c.JSON(http.StatusCreated, gin.H{"message": "registered"})
+    if err := db.DB.Create(&user).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+        return
+    }
+
+    c.JSON(http.StatusCreated, gin.H{"message": "registered", "role": user.Role})
 }
+
 
 func Login(c *gin.Context) {
     var credentials struct {
